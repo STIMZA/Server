@@ -23,13 +23,31 @@ while True:
     first_header_components = headers[0].split()
     http_method = first_header_components[0]
     path = first_header_components[1]
+    
 
-    if path == "/":
-        fin = open('index.html')
-        content = fin.read()
-        fin.close()
+    if http_method == "GET":
+        if path == "/":
+            fin = open('index.html')
+            content = fin.read()
+            fin.close()
+            response = 'HTTP/1.1 200 OK \n\n' + content
+        elif path == "/something":
+            fin = open('something.html')
+            content = fin.read()
+            fin.close()
+            response = 'HTTP/1.1 200 OK \n\n' + content
+        else:
+            response = 'HTTP/1.1 404 Page Not Found \n\n <h1>404 Not Found</h1>'
+    elif http_method == "POST":
+        if path == "/":
+            fin = open('submit.html')
+            content = fin.read()
+            fin.close()
+            response = 'HTTP/1.1 200 OK \n\n' + content
+        else:
+            response = 'HTTP/1.1 404 Page Not Found \n\n <h1>404 Not Found</h1>'
+    else:
+        response = 'HTTP/1.1 405 Method Not Allowed \n\n <h1>405 Method Not Allowed</h1>'
 
-        #STATUS_LINE
-        #HEADER
-        #MESSAGE_BODY
-        response = 'HTTP/1.1 200 OK \n\n' + content
+    client_socket.sendall(response.encode())
+    client_socket.close()        

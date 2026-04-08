@@ -3,21 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Page</title>
+    <title>Far Right Indicator Layout</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
+        body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        header, footer { background: #333; color: white; padding: 20px; text-align: center; }
+        
+        .hero-outer { 
+            background: #e9ecef; 
+            border-bottom: 1px solid #ddd;
+            width: 100%;
         }
-        h1 {
-            color: #333;
+
+        .hero-inner {
+            /* Removed max-width restriction to allow indicator to go to the far edge */
+            padding: 40px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            color: #28a745;
+            background: white;
+            padding: 8px 15px;
+            border-radius: 50px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            white-space: nowrap;
+            /* Ensures it stays at the far right edge */
+            margin-left: auto; 
+        }
+
+        .dot {
+            height: 12px;
+            width: 12px;
+            background-color: #28a745;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        .main-layout {
+            display: flex;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .sidebar { flex: 2; background: #f8f9fa; padding: 20px; border: 1px solid #ccc; }
+
+        .list-container { flex: 3; display: flex; flex-direction: column; padding-bottom: 20px; padding-top: 35px; gap: 20px; }
+        
+        .list-item { 
+            background: #f4f4f4; 
+            padding: 20px; 
+            border-left: 5px solid #333;
+            border: 1px solid #ddd;
+            position: relative; 
+            min-height: 100px;
+        }
+
+        .btn-go {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            
+            /* Changed from #333 to a lighter grey */
+            background-color: #666; 
+            
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .btn-go:hover {
+            background-color: #888; /* Changes from dark grey to a lighter grey */
+            transition: background-color 0.3s ease; /* Makes the color change smooth */
+        }
+
+        /* Container for the new buttons */
+        .pagination {
+            display: flex;
+            justify-content: flex-end; /* Pushes both buttons to the far right */
+            gap: 10px;                 /* Adds a small space between them */
+            margin-top: 10px;
+        }
+
+        /* Shared styles for navigation buttons */
+        .btn-nav {
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+            
+            /* Force both buttons to be the same size */
+            min-width: 100px; 
+            text-align: center;
+        }
+
+        /* Hover effect for navigation buttons */
+        .btn-nav:hover {
+            background-color: #555;
+        }
+
+        @media (max-width: 768px) {
+            .main-layout { flex-direction: column; }
+            .hero-inner { flex-direction: column; text-align: center; gap: 15px; }
+            .status-indicator { margin-left: unset; }
         }
     </style>
 </head>
 <body>
-    <h1>Welcome</h1>
-    <p>This is a simple HTML page.</p>
+
+    <header>
+        <h1>Top Section (Header)</h1>
+    </header>
+
+    <div class="hero-outer">
+        <section class="hero-inner">
+            <div class="hero-content">
+                <h2 style="margin:0">Hero Section</h2>
+                <p style="margin:5px 0 0 0">Full-width introductory area.</p>
+            </div>
+            <div class="status-indicator">
+                <span class="dot"></span>
+                System Online
+            </div>
+        </section>
+    </div>
+
+    <div class="main-layout">
+        <aside class="sidebar">
+            <h3>Sidebar Section</h3>
+            <p>Aligned to the left of your list.</p>
+        </aside>
+
+        <main class="list-container">
+            <section class="list-item">
+                <h3>List Item 1</h3>
+                <p>Content for the first list item.</p>
+                <button class="btn-go">Go to</button>
+            </section>
+            <section class="list-item">
+                <h3>List Item 2</h3>
+                <p>Content for the second list item.</p>
+                <button class="btn-go">Go to</button>
+            </section>
+            <section class="list-item">
+                <h3>List Item 3</h3>
+                <p>Content for the third list item.</p>
+                <button class="btn-go">Go to</button>
+            </section>
+            <div class="pagination">
+                <button class="btn-nav">Previous</button>
+                <button class="btn-nav">Next</button>
+            </div>
+
+        </main>
+    </div>
+
+    <footer>
+        <p>Bottom Section (Footer)</p>
+    </footer>
+
 </body>
 </html>
