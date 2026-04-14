@@ -3,10 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Far Right Indicator Layout</title>
+    <title>ROACH MASTER MIND</title>
     <style>
         body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; min-height: 100vh; }
-        header, footer { background: #333; color: white; padding: 20px; text-align: center; }
+        
+        /* Modern Header */
+        .main-header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #eee;
+            padding: 12px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo { font-size: 1.2rem; font-weight: 800; color: #333; margin: 0; }
+        .logo span { color: #666; font-weight: 400; }
+
+        .header-right { display: flex; align-items: center; gap: 30px; }
+
+        .header-nav a { 
+            text-decoration: none; 
+            color: #666; 
+            font-size: 0.9rem; 
+            font-weight: 500; 
+        }
+
+        .profile-section { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+
+        .user-info { text-align: right; line-height: 1.2; }
+        .user-name { display: block; font-size: 0.85rem; font-weight: 600; color: #333; }
+        .user-role { font-size: 0.75rem; color: #888; }
+
+        .profile-avatar {
+            width: 36px;
+            height: 36px;
+            background: #333;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        /* Modern Footer */
+        .modern-footer {
+            background: #fdfdfd;
+            border-top: 1px solid #eee;
+            padding: 60px 40px 20px;
+            margin-top: 40px;
+        }
+
+        .footer-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 40px;
+        }
+
+        .footer-brand h3 { margin-top: 0; font-size: 1.1rem; }
+        .footer-brand p { color: #888; font-size: 0.9rem; max-width: 250px; }
+
+        .footer-links h4 { font-size: 0.85rem; text-transform: uppercase; color: #333; margin-bottom: 15px; }
+        .footer-links a { display: block; text-decoration: none; color: #666; font-size: 0.9rem; margin-bottom: 8px; }
+
+        .footer-bottom {
+            border-top: 1px solid #f0f0f0;
+            margin-top: 40px;
+            padding-top: 20px;
+            text-align: center;
+            color: #bbb;
+            font-size: 0.8rem;
+        }
+
         
         .hero-outer { 
             background: #e9ecef; 
@@ -58,14 +134,10 @@
             flex: 1;
             padding: 20px;
             gap: 20px;
+            max-width: 1200px;
             margin: 0 auto;
             width: 100%;
             box-sizing: border-box;
-
-            /* Background Image settings */
-            background-image: url('https://s3.amazonaws.com/images.seroundtable.com/google-rainbow-texture-1491566442.jpg'); 
-            background-size: auto; /* Good for repeating patterns */
-            background-repeat: repeat; 
         }
 
         .sidebar { flex: 2; background: #f8f9fa; padding: 20px; border: 1px solid #ccc; }
@@ -73,63 +145,74 @@
         .list-container { flex: 3; display: flex; flex-direction: column; padding-bottom: 20px; padding-top: 35px; gap: 20px; }
         
         .list-item { 
-            background: #f4f4f4; 
+            background: #ffffff; /* Brighter white for items */
             padding: 20px; 
-            border-left: 5px solid #333;
+            padding-bottom: 50px; /* Space for the absolute button */
             border: 1px solid #ddd;
+            border-left: 5px solid #333; /* Keeps your accent */
             position: relative; 
-            min-height: 100px;
+            transition: transform 0.2s ease;
         }
+
+        .list-item:hover {
+            transform: translateY(-2px); /* Subtle lift on hover */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
 
         .btn-go {
             position: absolute;
             bottom: 15px;
             right: 15px;
-            padding: 6px 12px;
+            padding: 6px 16px;
             font-size: 0.85rem;
-            
-            /* Changed from #333 to a lighter grey */
             background-color: #666; 
-            
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: 0.3s;
         }
         
-        .btn-go:hover {
-            background-color: #888; /* Changes from dark grey to a lighter grey */
-            transition: background-color 0.3s ease; /* Makes the color change smooth */
-        }
+        .btn-go:hover { background-color: #333; }
 
         /* Container for the new buttons */
         .pagination {
             display: flex;
-            justify-content: flex-end; /* Pushes both buttons to the far right */
-            gap: 10px;                 /* Adds a small space between them */
+            justify-content: flex-end; 
+            gap: 10px;
             margin-top: 10px;
         }
 
-        /* Shared styles for navigation buttons */
         .btn-nav {
-            padding: 10px 20px;
-            background-color: #333;
-            color: white;
-            border: none;
-            border-radius: 4px;
+            padding: 10px 24px;
+            background-color: transparent;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 8px; /* Slightly rounder for a modern feel */
             cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.3s ease;
-            
-            /* Force both buttons to be the same size */
-            min-width: 100px; 
-            text-align: center;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 110px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         /* Hover effect for navigation buttons */
         .btn-nav:hover {
-            background-color: #555;
+            background-color: #333;
+            color: white;
+            border-color: #333;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-nav:hover::after {
+            margin-left: 12px; /* For the "Next" button */
+            transition: margin 0.3s ease;
         }
 
         @media (max-width: 768px) {
@@ -141,26 +224,41 @@
 </head>
 <body>
 
-    <header>
-        <h1>Top Section (Header)</h1>
+    <header class="main-header">
+        <div class="header-left">
+            <h1 class="logo">ROACH <span>MASTER MIND</span></h1>
+        </div>
+        <div class="header-right">
+            <nav class="header-nav">
+                <a href="#">Dashboard</a>
+                <a href="#">Reports</a>
+            </nav>
+            <div class="profile-section">
+                <div class="user-info">
+                    <span class="user-name">Alex Rivera</span>
+                    <span class="user-role">Pro Analyst</span>
+                </div>
+                <div class="profile-avatar">AR</div>
+            </div>
+        </div>
     </header>
 
     <div class="hero-outer">
         <section class="hero-inner">
             <div class="hero-content">
-                <h2 style="margin:0">Hero Section</h2>
-                <p style="margin:5px 0 0 0">Full-width introductory area.</p>
+                <h2 style="margin:0">Control pannel</h2>
+                <p style="margin:5px 0 0 0">Take control of your technical analysis</p>
             </div>
             <div class="status-indicator">
                 <span class="dot"></span>
-                System Online
+                Online
             </div>
         </section>
     </div>
 
     <div class="main-layout">
         <aside class="sidebar">
-            <h3>Sidebar Section</h3>
+            <h3>Analysis</h3>
             <p>Aligned to the left of your list.</p>
         </aside>
 
@@ -181,15 +279,32 @@
                 <button class="btn-go">Go to</button>
             </section>
             <div class="pagination">
-                <button class="btn-nav">Previous</button>
+                <button class="btn-nav prev">Previous</button>
                 <button class="btn-nav">Next</button>
             </div>
-
         </main>
     </div>
 
-    <footer>
-        <p>Bottom Section (Footer)</p>
+    <footer class="modern-footer">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <h3>ROACH MM</h3>
+                <p>Advanced technical analysis tools for the modern trader.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Product</h4>
+                <a href="#">Features</a>
+                <a href="#">Pricing</a>
+            </div>
+            <div class="footer-links">
+                <h4>Support</h4>
+                <a href="#">Help Center</a>
+                <a href="#">API Docs</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Roach Master Mind. All rights reserved.</p>
+        </div>
     </footer>
 
 </body>

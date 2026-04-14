@@ -1,53 +1,132 @@
-import socket
-import time
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import socketserver
+import os
+import re
+import json
+import pymongo # type: ignore
 
-SERVER_HOST = "0.0.0.0"
-SERVER_PORT = 8080
+# This class adds threading capabilities to the standard HTTPServer
+class ThreadingHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
+    """Handle requests in a separate thread."""
+    pass
 
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+class MyHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        # 1. Define your routes
+        if self.path == '/':
+            self.serve_file('index.html')
+            
+        elif self.path == '/about':
+            # You can serve an actual file:
+            self.serve_file('about.html')
+            # OR send a direct string response:
+            # self.send_text_response("<h1>About Us</h1><p>Welcome to the RMM Analytics portal.</p>")
 
-# Bind to all interfaces on port 8080 (exposes server to all network interfaces; consider security implications)
-server_socket.bind((SERVER_HOST, SERVER_PORT))
+        # 2. Handle static files (CSS, JS, Images) if they exist
+        elif os.path.exists(self.path.lstrip('/')):
+            self.serve_file(self.path.lstrip('/'))
+            
+        else:
+            self.send_error(404, "Page Not Found")
 
-# Listen for incoming connections (backlog of 5)
-server_socket.listen(5)  
-print("Server is listening on port {}...".format(SERVER_PORT))
+    def serve_file(self, filename):
+        """Helper to read and serve files from the directory"""
+        try:
+            with open(filename, 'rb') as f:
+                content = f.read()
+            self.send_response(200)
+            # Basic logic to set header based on extension
+            if filename.endswith(".html"):
+                self.send_header('Content-type', 'text/html')
+            elif filename.endswith(".css"):
+                self.send_header('Content-type', 'text/css')
+            self.end_headers()
+            self.wfile.write(content)
+        except FileNotFoundError:
+            self.send_error(404, f"File {filename} not found")
 
-while True:
-    # Accept a connection (blocking call)
-    client_socket, client_address = server_socket.accept()  
-    request = client_socket.recv(1500).decode()
-    #print("Received request from {}: {}".format(client_address, request))
-    headers = request.split('\n')
-    first_header_components = headers[0].split()
-    http_method = first_header_components[0]
-    path = first_header_components[1]
+    def send_text_response(self, html_string):
+        """Helper to send raw HTML strings"""
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        self.wfile.write(html_string.encode('utf-8'))
     
+    def do_POST(self):
 
-    if http_method == "GET":
-        if path == "/":
-            fin = open('index.html')
-            content = fin.read()
-            fin.close()
-            response = 'HTTP/1.1 200 OK \n\n' + content
-        elif path == "/something":
-            fin = open('something.html')
-            content = fin.read()
-            fin.close()
-            response = 'HTTP/1.1 200 OK \n\n' + content
-        else:
-            response = 'HTTP/1.1 404 Page Not Found \n\n <h1>404 Not Found</h1>'
-    elif http_method == "POST":
-        if path == "/":
-            fin = open('submit.html')
-            content = fin.read()
-            fin.close()
-            response = 'HTTP/1.1 200 OK \n\n' + content
-        else:
-            response = 'HTTP/1.1 404 Page Not Found \n\n <h1>404 Not Found</h1>'
-    else:
-        response = 'HTTP/1.1 405 Method Not Allowed \n\n <h1>405 Method Not Allowed</h1>'
+        # 1. Define your routes
+        if self.path == '/sessions':
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            
+            # Send HTTP response
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b"Data processed")
 
-    client_socket.sendall(response.encode())
-    client_socket.close()        
+            raw_data = post_data.decode('utf-8').strip()
+            
+            # Regex to find "Key":"Value"
+            pattern = r'"?(\w+)"?:"([^"]+)"'
+
+            client = pymongo.MongoClient("mongodb://localhost:27017/")
+            db = client["rmm_db"]
+            collection = db["analytics_data"]
+
+            # Process each line
+            for line in raw_data.split('\n'):
+                item = dict(re.findall(pattern, line))
+                
+                # 1. Extract 'name' and 'start' to form the Unique ID
+                name_val = item.get("Name")
+                start_val = item.get("Week_of_registry")
+
+                if name_val and start_val:
+                    # 2. Combine Name and Start for the Primary Key (_id)
+                    # Example: "Sensor_A1_2023-10-01"
+                    item["_id"] = f"{name_val}_{start_val.replace(' ', '_')}"
+
+                    # 3. Upsert (Update if ID exists, otherwise Insert)
+                    collection.replace_one(
+                        {"_id": item["_id"]}, 
+                        item, 
+                        upsert=True
+                    )
+                    print(f"Upserted ID: {item['_id']}")
+                else:
+                    print(f"Skipping line: Missing 'name' or 'start' field. Line: {line}")
+            
+        elif self.path == '/ruller':
+            # You can serve an actual file:
+            self.serve_file('about.html')
+            # OR send a direct string response:
+            # self.send_text_response("<h1>About Us</h1><p>Welcome to the RMM Analytics portal.</p>")
+
+        elif self.path == '/poi':
+            # You can serve an actual file:
+            self.serve_file('about.html')
+            # OR send a direct string response:
+            # self.send_text_response("<h1>About Us</h1><p>Welcome to the RMM Analytics portal.</p>")
+
+        # 2. Handle static files (CSS, JS, Images) if they exist
+        elif os.path.exists(self.path.lstrip('/')):
+            self.serve_file(self.path.lstrip('/'))
+            
+        else:
+            self.send_error(404, "resource not found")       
+
+
+def run(port=80):
+    server_address = ('', port)
+    # Use ThreadingHTTPServer instead of HTTPServer
+    httpd = ThreadingHTTPServer(server_address, MyHandler)
+    print(f"Multi-threaded server started on port {port}...")
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\nShutting down server.")
+        httpd.shutdown()
+
+if __name__ == "__main__":
+    run()
