@@ -54,24 +54,24 @@ class MyHandler(BaseHTTPRequestHandler):
     
     def do_POST(self):
 
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length)
+        
+        # Send HTTP response
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(b"Data processed")
+
+        raw_data = post_data.decode('utf-8').strip()
+
+        client = pymongo.MongoClient("mongodb://localhost:27017/")
+        db = client["rmm_db"]
+
         # 1. Define your routes
-        if self.path == '/sessions':
-            content_length = int(self.headers['Content-Length'])
-            post_data = self.rfile.read(content_length)
-            
-            # Send HTTP response
-            self.send_response(200)
-            self.send_header('Content-type', 'text/plain')
-            self.end_headers()
-            self.wfile.write(b"Data processed")
-
-            raw_data = post_data.decode('utf-8').strip()
-            
+        if self.path == '/sessions': 
             # Regex to find "Key":"Value"
-            pattern = r'"?(\w+)"?:"([^"]+)"'
-
-            client = pymongo.MongoClient("mongodb://localhost:27017/")
-            db = client["rmm_db"]
+            pattern = r'"?(\w+)"?:"([^"]+)"'            
             collection = db["analytics_data"]
 
             # Process each line
@@ -97,17 +97,47 @@ class MyHandler(BaseHTTPRequestHandler):
                 else:
                     print(f"Skipping line: Missing 'name' or 'start' field. Line: {line}")
             
-        elif self.path == '/ruller':
-            # You can serve an actual file:
-            self.serve_file('about.html')
-            # OR send a direct string response:
-            # self.send_text_response("<h1>About Us</h1><p>Welcome to the RMM Analytics portal.</p>")
+        elif self.path == '/ruller':            
+            
+            collection = db["ruller_data"]
+
+            # Extract pairs
+            matches = re.findall(r'"(\d+)":"([\d.]+)"', raw_data)
+
+            for key, val in matches:
+                collection.update_one(
+                    {"_id": key},                 # Filter
+                    {"$set": {"value": float(val)}}, # Update
+                    upsert=True                    # Create if it doesn't exist
+                )
+
+            print(f"Processed {len(matches)} ruller updates.")
 
         elif self.path == '/poi':
-            # You can serve an actual file:
-            self.serve_file('about.html')
-            # OR send a direct string response:
-            # self.send_text_response("<h1>About Us</h1><p>Welcome to the RMM Analytics portal.</p>")
+            collection = db["page_poi_data"]
+            # Split by line and process each entry
+            for line in raw_data.strip().split('\n'):
+                matches = re.findall(r'"(.*?)"', line)
+                
+                if len(matches) == 4:
+                    # Replace spaces with underscores and append week_of_registry
+                    # week_of_registry is assumed to be matches[1] or matches[3] based on your previous structure
+                    # I'll use matches[1] here; adjust the index if your data order differs
+                    registry_week = matches[3]
+                    doc_id = f"{matches[0].replace(' ', '_')}_{registry_week}"
+                    
+                    # Define the data structure
+                    new_data = {
+                        "_id": doc_id,
+                        "value": matches[1],
+                        matches[2]: matches[3]
+                    }
+
+                    # replace_one with upsert=True: 
+                    # If _id exists, it overwrites. If not, it creates a new record.
+                    collection.replace_one({"_id": doc_id}, new_data, upsert=True)
+                    print(f"Upserted ID: {doc_id}")
+            print("Page POI data update complete.")
 
         # 2. Handle static files (CSS, JS, Images) if they exist
         elif os.path.exists(self.path.lstrip('/')):
@@ -118,7 +148,7 @@ class MyHandler(BaseHTTPRequestHandler):
 
 
 def run(port=80):
-    server_address = ('', port)
+    server_address = ('localhost', port)
     # Use ThreadingHTTPServer instead of HTTPServer
     httpd = ThreadingHTTPServer(server_address, MyHandler)
     print(f"Multi-threaded server started on port {port}...")
