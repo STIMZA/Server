@@ -63,13 +63,14 @@ class MyHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"Data processed")
 
-        raw_data = post_data.decode('utf-8').strip()
-
         client = pymongo.MongoClient("mongodb://localhost:27017/")
         db = client["rmm_db"]
 
         # 1. Define your routes
         if self.path == '/sessions': 
+            
+            raw_data = post_data.decode('utf-8').strip()
+            
             # Regex to find "Key":"Value"
             pattern = r'"?(\w+)"?:"([^"]+)"'            
             collection = db["analytics_data"]
@@ -99,6 +100,8 @@ class MyHandler(BaseHTTPRequestHandler):
             
         elif self.path == '/ruller':            
             
+            raw_data = post_data.decode('utf-8').strip()
+
             collection = db["ruller_data"]
 
             # Extract pairs
@@ -114,6 +117,9 @@ class MyHandler(BaseHTTPRequestHandler):
             print(f"Processed {len(matches)} ruller updates.")
 
         elif self.path == '/poi':
+
+            raw_data = post_data.decode('utf-8').strip()
+
             collection = db["page_poi_data"]
             # Split by line and process each entry
             for line in raw_data.strip().split('\n'):
@@ -138,6 +144,49 @@ class MyHandler(BaseHTTPRequestHandler):
                     collection.replace_one({"_id": doc_id}, new_data, upsert=True)
                     print(f"Upserted ID: {doc_id}")
             print("Page POI data update complete.")
+
+        elif self.path == '/metadata':
+            
+            raw_data = post_data.decode('utf-8').strip()
+            collection = db["metadata"]
+
+            # --- SECTION 1: EXTRACTION ---
+            start_key = "current_server_time"
+            start_index = raw_data.find(start_key)
+            clean_content = raw_data[start_index:]
+
+            data_dict = {}
+            for pair in clean_content.split(',"'):
+                if ":" in pair:
+                    key, value = pair.split(":", 1)
+                    
+                    # Strip all whitespace and specific characters from the key
+                    clean_key = key.replace('"', '').strip()
+                    
+                    # Clean the value: remove quotes, remove the bracket, then strip ALL whitespace
+                    clean_value = value.replace('"', '').replace(']', '').strip()
+                    
+                    data_dict[clean_key] = clean_value
+            
+            # --- SECTION 2: SET ACCOUNT NUMBER AS _ID ---
+            # Assign the account number to the MongoDB reserved _id field
+            if "account_number" in data_dict:
+                data_dict["_id"] = data_dict["account_number"]
+
+            # 1. Define the unique filter (finding the record by account number)
+            filter_criteria = {"account_number": data_dict.get("account_number")}
+
+            # 2. Define the update (using $set to replace values)
+            update_values = {"$set": data_dict}
+
+            # 3. Use upsert=True so it creates the record if it doesn't exist yet
+            result = collection.update_one(filter_criteria, update_values, upsert=True)
+            
+            if result.matched_count > 0:
+                print(f"Successfully updated account: {data_dict.get('account_number')}")
+            else:
+                print(f"Created new record for account: {data_dict.get('account_number')}")
+
 
         # 2. Handle static files (CSS, JS, Images) if they exist
         elif os.path.exists(self.path.lstrip('/')):
